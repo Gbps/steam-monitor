@@ -60,12 +60,18 @@ namespace Server
                 if (lpBytesWritten != dwSize)
                     throw new Exception("WriteProcessMemory did not write all bytes");
 
+                // LoadLibraryA is a valid LPTHREAD_START_ROUTINE since it returns a 32-bit value and
                 thrdHandle = CreateRemoteThread(procHandle, IntPtr.Zero, 0, loadLibrary, strMem, 0, IntPtr.Zero);
 
                 if (thrdHandle == null)
                     throw new Exception("CreateRemoteThread failed");
 
                 VirtualFreeEx(procHandle, strMem, dwSize, AllocationType.Decommit | AllocationType.Release);
+
+                // Wait on remote LoadLibrary to finish to so we can get the return HMODULE
+                WaitForSingleObject(thrdHandle, 1000);
+
+
 
             }
             catch (Exception)
@@ -156,6 +162,9 @@ namespace Server
                 throw;
             }
         }
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern UInt32 WaitForSingleObject(IntPtr hHandle, UInt32 dwMilliseconds);
 
         [DllImport("kernel32.dll", SetLastError = true)]
         public static extern bool WriteProcessMemory(
