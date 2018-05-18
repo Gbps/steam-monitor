@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using EasyHook;
 using System.Runtime.Remoting;
 using System.IO;
 
@@ -10,7 +9,7 @@ namespace Server
 {
     class Injector
     {
-        public const string ClientDLLName = "Client.dll";
+        public const string ClientDLLName = "steamhook32.dll";
 
         public Injector()
         {
@@ -39,31 +38,13 @@ namespace Server
         /// <param name="pid"></param>
         public bool InjectProc(int pid)
         {
-            string channelName = null;
-
             Logger.Server.DebugLine($"PID: {pid}");
-
-            // Create server for communicating with injected processes
-            RemoteHooking.IpcCreateServer<ServerInterface>(ref channelName, WellKnownObjectMode.Singleton);
 
             // Find Client dll
             string dllPath = GetInjectionLib();
             Logger.Server.DebugLine($"DLL Path: {dllPath}");
 
-            try
-            {
-                EasyHook.RemoteHooking.Inject(
-                      pid,          // ID of process to inject into
-                      dllPath,      // 32-bit library to inject (if target is 32-bit)
-                      dllPath,      // 64-bit library to inject (if target is 64-bit)
-                      channelName   // the parameters to pass into injected library
-                );
-            }
-            catch (Exception e)
-            {
-                Logger.Server.Error("Failed to inject into target", e);
-                return false;
-            }
+            Inject32.InjectPid(pid, dllPath);
 
             Logger.Server.DebugLine("Injection successful");
             return true;

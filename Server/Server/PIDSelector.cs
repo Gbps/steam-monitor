@@ -84,7 +84,6 @@ namespace Server
                 }
 
                 ProcListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
-                //ProcListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
             }
             ));
         }
