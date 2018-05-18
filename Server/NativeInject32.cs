@@ -18,7 +18,8 @@ namespace Server
         /// <param name="DllPath">The full path to the DLL to load</param>
         /// <exception cref="Exception">A win32 API call failed</exception>
         /// <exception cref="ArgumentException">DLL path does not exist</exception>
-        public static void InjectPid(int TargetPid, string DllPath)
+        /// <returns>HMODULE of the new library</returns>
+        public static IntPtr InjectPid(int TargetPid, string DllPath)
         {
             IntPtr thrdHandle = IntPtr.Zero;
             IntPtr procHandle = IntPtr.Zero;
@@ -40,18 +41,18 @@ namespace Server
                     TargetPid
                 );
 
-                if (procHandle == null)
+                if (procHandle == IntPtr.Zero || procHandle.ToInt32() == -1)
                     throw new Exception("Could not open handle to target process");
 
                 IntPtr loadLibrary = GetProcAddress(GetModuleHandle("kernel32.dll"), "LoadLibraryA");
 
-                if (loadLibrary == null)
+                if (loadLibrary == IntPtr.Zero)
                     throw new Exception("Could not get kernel32.dll LoadLibraryA");
 
                 uint dwSize = (uint)DllPath.Length + 1;
 
                 IntPtr strMem = VirtualAllocEx(procHandle, IntPtr.Zero, dwSize, AllocationType.Commit | AllocationType.Reserve, MemoryProtection.ReadWrite);
-                if (strMem == null)
+                if (strMem == IntPtr.Zero)
                     throw new Exception("Failed VirtualAllocEx");
 
                 uint lpBytesWritten;
@@ -63,7 +64,7 @@ namespace Server
                 // LoadLibraryA is a valid LPTHREAD_START_ROUTINE since it returns a 32-bit value and
                 thrdHandle = CreateRemoteThread(procHandle, IntPtr.Zero, 0, loadLibrary, strMem, 0, IntPtr.Zero);
 
-                if (thrdHandle == null)
+                if (thrdHandle == IntPtr.Zero)
                     throw new Exception("CreateRemoteThread failed");
 
                 VirtualFreeEx(procHandle, strMem, dwSize, AllocationType.Decommit | AllocationType.Release);
@@ -71,83 +72,24 @@ namespace Server
                 // Wait on remote LoadLibrary to finish to so we can get the return HMODULE
                 WaitForSingleObject(thrdHandle, 1000);
 
+                // Grab the return value, which is the HMOUDLE
 
+                uint modHandle = 0;
+                var res = GetExitCodeThread(thrdHandle, out modHandle);
 
+                if (!res)
+                    throw new Exception($"GetExitCodeThread failed: {Marshal.GetLastWin32Error()}");
+
+                if (modHandle == 0)
+                    throw new Exception("LoadLibrary returned NULL");
+
+                return (IntPtr) modHandle;
             }
             catch (Exception)
             {
-                if(thrdHandle != null)
-                {
-                    CloseHandle(thrdHandle);
-                }
-
-                if(procHandle != null)
-                {
-                    CloseHandle(procHandle);
-                }
-
                 throw;
             }
-        }
-
-        /// <summary>
-        /// Uninjects a native DLL from a process by calling FreeLibrary
-        /// </summary>
-        /// <param name="TargetPid">The target process PID</param>
-        /// <param name="DllPath">The full path to the DLL to load</param>
-        /// <exception cref="Exception">A win32 API call failed</exception>
-        /// <exception cref="ArgumentException">DLL path does not exist</exception>
-        public static void UninjectPid(int TargetPid, string DllPath)
-        {
-            IntPtr thrdHandle = IntPtr.Zero;
-            IntPtr procHandle = IntPtr.Zero;
-
-            try
-            {
-                if (!File.Exists(DllPath))
-                {
-                    throw new ArgumentException("File does not exist");
-                }
-
-                procHandle = OpenProcess(
-                    ProcessAccessFlags.CreateThread |
-                    ProcessAccessFlags.QueryInformation |
-                    ProcessAccessFlags.VirtualMemoryOperation |
-                    ProcessAccessFlags.VirtualMemoryWrite |
-                    ProcessAccessFlags.VirtualMemoryRead,
-                    false,
-                    TargetPid
-                );
-
-                if (procHandle == null)
-                    throw new Exception("Could not open handle to target process");
-
-                IntPtr loadLibrary = GetProcAddress(GetModuleHandle("kernel32.dll"), "LoadLibraryA");
-
-                if (loadLibrary == null)
-                    throw new Exception("Could not get kernel32.dll LoadLibraryA");
-
-                uint dwSize = (uint)DllPath.Length + 1;
-
-                IntPtr strMem = VirtualAllocEx(procHandle, IntPtr.Zero, dwSize, AllocationType.Commit | AllocationType.Reserve, MemoryProtection.ReadWrite);
-                if (strMem == null)
-                    throw new Exception("Failed VirtualAllocEx");
-
-                uint lpBytesWritten;
-                WriteProcessMemory(procHandle, strMem, Encoding.ASCII.GetBytes(DllPath), dwSize, out lpBytesWritten);
-
-                if (lpBytesWritten != dwSize)
-                    throw new Exception("WriteProcessMemory did not write all bytes");
-
-                thrdHandle = CreateRemoteThread(procHandle, IntPtr.Zero, 0, loadLibrary, strMem, 0, IntPtr.Zero);
-
-                if (thrdHandle == null)
-                    throw new Exception("CreateRemoteThread failed");
-
-                VirtualFreeEx(procHandle, strMem, dwSize, AllocationType.Decommit | AllocationType.Release);
-
-            }
-            catch (Exception)
+            finally
             {
                 if (thrdHandle != null)
                 {
@@ -158,10 +100,63 @@ namespace Server
                 {
                     CloseHandle(procHandle);
                 }
-
-                throw;
             }
         }
+
+        /// <summary>
+        /// Uninjects a native DLL from a process by calling FreeLibrary
+        /// </summary>
+        /// <param name="TargetPid">The target process PID</param>
+        /// <param name="ModuleHandle">HMODULE returned from InjectPid</param>
+        /// <exception cref="Exception">A win32 API call failed</exception>
+        public static void UninjectPid(int TargetPid, IntPtr ModuleHandle)
+        {
+            IntPtr thrdHandle = IntPtr.Zero;
+            IntPtr procHandle = IntPtr.Zero;
+
+            try
+            {
+                procHandle = OpenProcess(
+                    ProcessAccessFlags.CreateThread |
+                    ProcessAccessFlags.QueryInformation,
+                    false,
+                    TargetPid
+                );
+
+                if (procHandle == IntPtr.Zero || procHandle.ToInt32() == -1)
+                    throw new Exception("Could not open handle to target process");
+
+                IntPtr pFreeLibrary = GetProcAddress(GetModuleHandle("kernel32.dll"), "FreeLibrary");
+
+                if (pFreeLibrary == IntPtr.Zero)
+                    throw new Exception("Could not get kernel32.dll FreeLibrary");
+
+                thrdHandle = CreateRemoteThread(procHandle, IntPtr.Zero, 0, pFreeLibrary, ModuleHandle, 0, IntPtr.Zero);
+
+                if (thrdHandle == IntPtr.Zero)
+                    throw new Exception("CreateRemoteThread failed");
+
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            finally
+            {
+                if (thrdHandle != null)
+                {
+                    CloseHandle(thrdHandle);
+                }
+
+                if (procHandle != null)
+                {
+                    CloseHandle(procHandle);
+                }
+            }
+        }
+
+        [DllImport("kernel32.dll")]
+        static extern bool GetExitCodeThread(IntPtr hThread, out uint lpExitCode);
 
         [DllImport("kernel32.dll", SetLastError = true)]
         static extern UInt32 WaitForSingleObject(IntPtr hHandle, UInt32 dwMilliseconds);

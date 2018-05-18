@@ -11,8 +11,25 @@ namespace Server
     {
         public const string ClientDLLName = "steamhook32.dll";
 
+        /// <summary>
+        /// [pid, HMODULE] of all injected processes 
+        /// </summary>
+        private Dictionary<int, IntPtr> m_InjectedHandles = new Dictionary<int, IntPtr>();
+
         public Injector()
         {
+        }
+
+        ~Injector()
+        {
+            try
+            {
+                foreach (var kv in m_InjectedHandles)
+                {
+                    UninjectProc(kv.Key);
+                }
+            }
+            catch (Exception) { };
         }
 
         /// <summary>
@@ -36,18 +53,37 @@ namespace Server
         /// Inject into process specified by pid
         /// </summary>
         /// <param name="pid"></param>
-        public bool InjectProc(int pid)
+        public IntPtr InjectProc(int pid)
         {
             Logger.Server.DebugLine($"PID: {pid}");
 
-            // Find Client dll
+            // Find client dll path
             string dllPath = GetInjectionLib();
             Logger.Server.DebugLine($"DLL Path: {dllPath}");
 
-            Inject32.InjectPid(pid, dllPath);
+            var res = Inject32.InjectPid(pid, dllPath);
 
             Logger.Server.DebugLine("Injection successful");
-            return true;
+
+            m_InjectedHandles[pid] = res;
+
+            return res;
+        }
+
+        public void UninjectProc(int pid)
+        {
+            IntPtr handle;
+            var found = m_InjectedHandles.TryGetValue(pid, out handle);
+            if(!found)
+            {
+                throw new Exception("Tried to uninject a non-injected process");
+            }
+
+            Logger.Server.DebugLine($"Uninject PID: {pid}");
+
+            Inject32.UninjectPid(pid, handle);
+
+            Logger.Server.DebugLine("Uninjection successful");
         }
 
         /// <summary>
