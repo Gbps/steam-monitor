@@ -84,6 +84,79 @@ namespace Server
             }
         }
 
+        /// <summary>
+        /// Uninjects a native DLL from a process by calling FreeLibrary
+        /// </summary>
+        /// <param name="TargetPid">The target process PID</param>
+        /// <param name="DllPath">The full path to the DLL to load</param>
+        /// <exception cref="Exception">A win32 API call failed</exception>
+        /// <exception cref="ArgumentException">DLL path does not exist</exception>
+        public static void UninjectPid(int TargetPid, string DllPath)
+        {
+            IntPtr thrdHandle = IntPtr.Zero;
+            IntPtr procHandle = IntPtr.Zero;
+
+            try
+            {
+                if (!File.Exists(DllPath))
+                {
+                    throw new ArgumentException("File does not exist");
+                }
+
+                procHandle = OpenProcess(
+                    ProcessAccessFlags.CreateThread |
+                    ProcessAccessFlags.QueryInformation |
+                    ProcessAccessFlags.VirtualMemoryOperation |
+                    ProcessAccessFlags.VirtualMemoryWrite |
+                    ProcessAccessFlags.VirtualMemoryRead,
+                    false,
+                    TargetPid
+                );
+
+                if (procHandle == null)
+                    throw new Exception("Could not open handle to target process");
+
+                IntPtr loadLibrary = GetProcAddress(GetModuleHandle("kernel32.dll"), "LoadLibraryA");
+
+                if (loadLibrary == null)
+                    throw new Exception("Could not get kernel32.dll LoadLibraryA");
+
+                uint dwSize = (uint)DllPath.Length + 1;
+
+                IntPtr strMem = VirtualAllocEx(procHandle, IntPtr.Zero, dwSize, AllocationType.Commit | AllocationType.Reserve, MemoryProtection.ReadWrite);
+                if (strMem == null)
+                    throw new Exception("Failed VirtualAllocEx");
+
+                uint lpBytesWritten;
+                WriteProcessMemory(procHandle, strMem, Encoding.ASCII.GetBytes(DllPath), dwSize, out lpBytesWritten);
+
+                if (lpBytesWritten != dwSize)
+                    throw new Exception("WriteProcessMemory did not write all bytes");
+
+                thrdHandle = CreateRemoteThread(procHandle, IntPtr.Zero, 0, loadLibrary, strMem, 0, IntPtr.Zero);
+
+                if (thrdHandle == null)
+                    throw new Exception("CreateRemoteThread failed");
+
+                VirtualFreeEx(procHandle, strMem, dwSize, AllocationType.Decommit | AllocationType.Release);
+
+            }
+            catch (Exception)
+            {
+                if (thrdHandle != null)
+                {
+                    CloseHandle(thrdHandle);
+                }
+
+                if (procHandle != null)
+                {
+                    CloseHandle(procHandle);
+                }
+
+                throw;
+            }
+        }
+
         [DllImport("kernel32.dll", SetLastError = true)]
         public static extern bool WriteProcessMemory(
             IntPtr hProcess,
