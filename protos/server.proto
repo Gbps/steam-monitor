@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package steamhook;
+
+message S2CMessage {
+
+	enum S2CMessageType {
+		SERVER_HELLO = 0;
+	}
+
+	S2CMessageType Type = 1;
+}
+
+message ServerHello {
+	int32 processid = 1;
+}

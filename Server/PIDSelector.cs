@@ -12,7 +12,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.Threading;
 
-namespace Server
+namespace Steamhook
 {
     public partial class PIDSelector : Form
     {
