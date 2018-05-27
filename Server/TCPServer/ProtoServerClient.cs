@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading.Tasks;
+using System.Threading;
 using static Steamhook.C2SMessage.Types;
 
 namespace Steamhook.TCPServer
@@ -19,9 +19,16 @@ namespace Steamhook.TCPServer
         /// </summary>
         public TcpClient Client { get; private set; }
 
+        /// <summary>
+        /// The thread accepting data from the client
+        /// </summary>
+        public Thread AcceptorThread { get; set; }
+
         private NetworkStream m_Stream;
 
-        ProtoServerClient(TcpClient client)
+        private delegate object PacketParser(System.IO.Stream stream);
+
+        public ProtoServerClient(TcpClient client)
         {
             Client = client;
             m_Stream = client.GetStream();
@@ -52,22 +59,41 @@ namespace Steamhook.TCPServer
         {
             var type = message.Type;
 
-            Logger.Server.DebugLine($"{type} received");
+            if(!Client.Connected)
+            {
+                throw new Exception("Client disconnected");
+            }
+
+            Logger.Server.DebugLine($"Client {type} packet received");
 
             switch (type)
             {
                 case C2SMessageType.ClientHello:
-                    HandlePacket(ClientHello.Parser.ParseDelimitedFrom(m_Stream));
+                    HandlePacket(ReadPacket<ClientHello>(ClientHello.Parser.ParseDelimitedFrom));
                     break;
 
+                case C2SMessageType.Invalid:
                 default:
-                    throw new Exception($"Unexpected packet type {type}");
+                    throw new Exception($"Unexpected packet {type}");
             }
+        }
+
+        private T ReadPacket<T>(PacketParser parserfn)
+        {
+            T packet = (T)parserfn(m_Stream);
+            if(!Client.Connected)
+            {
+                // If we disconnected, this is not a valid packet
+                throw new Exception("Client disconnected");
+            }
+
+            return packet;
         }
 
         private void HandlePacket(ClientHello message)
         {
         }
+
         /// <summary>
         /// Handles all client interaction until the client disconnects
         /// </summary>

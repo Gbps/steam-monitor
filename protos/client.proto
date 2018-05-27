@@ -5,7 +5,8 @@ package steamhook;
 message C2SMessage {
 
 	enum C2SMessageType {
-		CLIENT_HELLO = 0;
+		INVALID = 0;
+		CLIENT_HELLO = 1;
 	}
 
 	C2SMessageType Type = 1;

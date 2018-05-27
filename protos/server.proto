@@ -5,7 +5,8 @@ package steamhook;
 message S2CMessage {
 
 	enum S2CMessageType {
-		SERVER_HELLO = 0;
+		INVALID = 0;
+		SERVER_HELLO = 1;
 	}
 
 	S2CMessageType Type = 1;

@@ -21,12 +21,14 @@ namespace Steamhook.TCPServer
 
         private Thread m_Thread;
 
+        private List<ProtoServerClient> m_Clients = new List<ProtoServerClient>();
+
         /// <summary>
         /// The TCP port the server is listening on
         /// </summary>
         public int Port { get; private set; }
 
-        ProtoServer()
+        public ProtoServer()
         {
 
         }
@@ -44,10 +46,10 @@ namespace Steamhook.TCPServer
 
             try
             {
-                var addr = Dns.GetHostEntry(Dns.GetHostName()).AddressList[0];
-                m_Endpoint = new IPEndPoint(addr, port);
+                m_Endpoint = new IPEndPoint(IPAddress.Loopback, port);
 
                 m_Listener = new TcpListener(m_Endpoint);
+                m_Listener.Start();
 
                 m_Thread = new Thread(ServerMainThread);
                 m_Thread.Start();
@@ -60,14 +62,64 @@ namespace Steamhook.TCPServer
         }
 
         /// <summary>
+        /// Spawns a worker thread to handle the client
+        /// </summary>
+        /// <param name="protoClient"></param>
+        private void AcceptClient(ProtoServerClient protoClient)
+        {
+            // Queue the communication into the thread pool
+            // When that thread disconnects, remove that client from the client list
+            var newThread = new Thread(o =>
+            {
+                try
+                {
+
+                    protoClient.HandleForever();
+                }
+                catch (Exception)
+                {
+
+                }
+                finally
+                {
+                    RemoveClient(protoClient);
+                }
+            });
+
+            protoClient.AcceptorThread = newThread;
+
+            m_Clients.Add(protoClient);
+
+            newThread.Start();
+        }
+
+        /// <summary>
+        /// Removes a current connected client from the active list
+        /// </summary>
+        /// <param name="client">The client</param>
+        private void RemoveClient(ProtoServerClient client)
+        {
+            Logger.Server.DebugLine($"Client disconnect: {client.Client.Client.RemoteEndPoint}");
+
+            m_Clients.Remove(client);
+
+            // Close resources just in case
+            client.Client.Close();
+            client.AcceptorThread.Abort();
+        }
+        /// <summary>
         /// Accept clients from the endpoint and handle their threads
         /// </summary>
         private void ServerMainThread()
         {
-            var client = m_Listener.AcceptTcpClient();
+            Logger.Server.DebugLine($"Starting server @ {m_Endpoint}");
 
-            Logger.Server.DebugLine($"Incoming client: {client.Client.RemoteEndPoint}");
-            k
+            while(true)
+            {
+                var client = m_Listener.AcceptTcpClient();
+                var protoClient = new ProtoServerClient(client);
+                AcceptClient(protoClient);
+            }
         }
     }
 }

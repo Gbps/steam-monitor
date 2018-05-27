@@ -123,14 +123,14 @@ void protobuf_RegisterTypes(const ::std::string&) {
 void AddDescriptorsImpl() {
   InitDefaults();
   static const char descriptor[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
-      "\n\014client.proto\022\tsteamhook\"d\n\nC2SMessage\022"
+      "\n\014client.proto\022\tsteamhook\"q\n\nC2SMessage\022"
       "2\n\004Type\030\001 \001(\0162$.steamhook.C2SMessage.C2S"
-      "MessageType\"\"\n\016C2SMessageType\022\020\n\014CLIENT_"
-      "HELLO\020\000\" \n\013ClientHello\022\021\n\tprocessid\030\001 \001("
-      "\005b\006proto3"
+      "MessageType\"/\n\016C2SMessageType\022\013\n\007INVALID"
+      "\020\000\022\020\n\014CLIENT_HELLO\020\001\" \n\013ClientHello\022\021\n\tp"
+      "rocessid\030\001 \001(\005b\006proto3"
   };
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-      descriptor, 169);
+      descriptor, 182);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "client.proto", &protobuf_RegisterTypes);
 }
@@ -154,6 +154,7 @@ const ::google::protobuf::EnumDescriptor* C2SMessage_C2SMessageType_descriptor()
 bool C2SMessage_C2SMessageType_IsValid(int value) {
   switch (value) {
     case 0:
+    case 1:
       return true;
     default:
       return false;
@@ -161,6 +162,7 @@ bool C2SMessage_C2SMessageType_IsValid(int value) {
 }
 
 #if !defined(_MSC_VER) || _MSC_VER >= 1900
+const C2SMessage_C2SMessageType C2SMessage::INVALID;
 const C2SMessage_C2SMessageType C2SMessage::CLIENT_HELLO;
 const C2SMessage_C2SMessageType C2SMessage::C2SMessageType_MIN;
 const C2SMessage_C2SMessageType C2SMessage::C2SMessageType_MAX;

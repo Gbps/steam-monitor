@@ -63,12 +63,13 @@ extern ServerHelloDefaultTypeInternal _ServerHello_default_instance_;
 namespace steamhook {
 
 enum S2CMessage_S2CMessageType {
-  S2CMessage_S2CMessageType_SERVER_HELLO = 0,
+  S2CMessage_S2CMessageType_INVALID = 0,
+  S2CMessage_S2CMessageType_SERVER_HELLO = 1,
   S2CMessage_S2CMessageType_S2CMessage_S2CMessageType_INT_MIN_SENTINEL_DO_NOT_USE_ = ::google::protobuf::kint32min,
   S2CMessage_S2CMessageType_S2CMessage_S2CMessageType_INT_MAX_SENTINEL_DO_NOT_USE_ = ::google::protobuf::kint32max
 };
 bool S2CMessage_S2CMessageType_IsValid(int value);
-const S2CMessage_S2CMessageType S2CMessage_S2CMessageType_S2CMessageType_MIN = S2CMessage_S2CMessageType_SERVER_HELLO;
+const S2CMessage_S2CMessageType S2CMessage_S2CMessageType_S2CMessageType_MIN = S2CMessage_S2CMessageType_INVALID;
 const S2CMessage_S2CMessageType S2CMessage_S2CMessageType_S2CMessageType_MAX = S2CMessage_S2CMessageType_SERVER_HELLO;
 const int S2CMessage_S2CMessageType_S2CMessageType_ARRAYSIZE = S2CMessage_S2CMessageType_S2CMessageType_MAX + 1;
 
@@ -165,6 +166,8 @@ class S2CMessage : public ::google::protobuf::Message /* @@protoc_insertion_poin
   // nested types ----------------------------------------------------
 
   typedef S2CMessage_S2CMessageType S2CMessageType;
+  static const S2CMessageType INVALID =
+    S2CMessage_S2CMessageType_INVALID;
   static const S2CMessageType SERVER_HELLO =
     S2CMessage_S2CMessageType_SERVER_HELLO;
   static inline bool S2CMessageType_IsValid(int value) {

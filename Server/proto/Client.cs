@@ -24,10 +24,11 @@ namespace Steamhook {
     static ClientReflection() {
       byte[] descriptorData = global::System.Convert.FromBase64String(
           string.Concat(
-            "CgxjbGllbnQucHJvdG8SCXN0ZWFtaG9vayJkCgpDMlNNZXNzYWdlEjIKBFR5",
+            "CgxjbGllbnQucHJvdG8SCXN0ZWFtaG9vayJxCgpDMlNNZXNzYWdlEjIKBFR5",
             "cGUYASABKA4yJC5zdGVhbWhvb2suQzJTTWVzc2FnZS5DMlNNZXNzYWdlVHlw",
-            "ZSIiCg5DMlNNZXNzYWdlVHlwZRIQCgxDTElFTlRfSEVMTE8QACIgCgtDbGll",
-            "bnRIZWxsbxIRCglwcm9jZXNzaWQYASABKAViBnByb3RvMw=="));
+            "ZSIvCg5DMlNNZXNzYWdlVHlwZRILCgdJTlZBTElEEAASEAoMQ0xJRU5UX0hF",
+            "TExPEAEiIAoLQ2xpZW50SGVsbG8SEQoJcHJvY2Vzc2lkGAEgASgFYgZwcm90",
+            "bzM="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, new pbr::GeneratedClrTypeInfo[] {
@@ -171,7 +172,8 @@ namespace Steamhook {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static partial class Types {
       public enum C2SMessageType {
-        [pbr::OriginalName("CLIENT_HELLO")] ClientHello = 0,
+        [pbr::OriginalName("INVALID")] Invalid = 0,
+        [pbr::OriginalName("CLIENT_HELLO")] ClientHello = 1,
       }
 
     }

@@ -63,12 +63,13 @@ extern ClientHelloDefaultTypeInternal _ClientHello_default_instance_;
 namespace steamhook {
 
 enum C2SMessage_C2SMessageType {
-  C2SMessage_C2SMessageType_CLIENT_HELLO = 0,
+  C2SMessage_C2SMessageType_INVALID = 0,
+  C2SMessage_C2SMessageType_CLIENT_HELLO = 1,
   C2SMessage_C2SMessageType_C2SMessage_C2SMessageType_INT_MIN_SENTINEL_DO_NOT_USE_ = ::google::protobuf::kint32min,
   C2SMessage_C2SMessageType_C2SMessage_C2SMessageType_INT_MAX_SENTINEL_DO_NOT_USE_ = ::google::protobuf::kint32max
 };
 bool C2SMessage_C2SMessageType_IsValid(int value);
-const C2SMessage_C2SMessageType C2SMessage_C2SMessageType_C2SMessageType_MIN = C2SMessage_C2SMessageType_CLIENT_HELLO;
+const C2SMessage_C2SMessageType C2SMessage_C2SMessageType_C2SMessageType_MIN = C2SMessage_C2SMessageType_INVALID;
 const C2SMessage_C2SMessageType C2SMessage_C2SMessageType_C2SMessageType_MAX = C2SMessage_C2SMessageType_CLIENT_HELLO;
 const int C2SMessage_C2SMessageType_C2SMessageType_ARRAYSIZE = C2SMessage_C2SMessageType_C2SMessageType_MAX + 1;
 
@@ -165,6 +166,8 @@ class C2SMessage : public ::google::protobuf::Message /* @@protoc_insertion_poin
   // nested types ----------------------------------------------------
 
   typedef C2SMessage_C2SMessageType C2SMessageType;
+  static const C2SMessageType INVALID =
+    C2SMessage_C2SMessageType_INVALID;
   static const C2SMessageType CLIENT_HELLO =
     C2SMessage_C2SMessageType_CLIENT_HELLO;
   static inline bool C2SMessageType_IsValid(int value) {

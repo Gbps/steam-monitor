@@ -19,6 +19,9 @@ namespace Steamhook
             Logger.Server.StartConsole();
             Logger.Client.StartConsole();
 
+            var server = new TCPServer.ProtoServer();
+            server.StartListen(10405);
+
             var injector = new Injector();
 
             int pid = injector.QueryUserForProcess();
