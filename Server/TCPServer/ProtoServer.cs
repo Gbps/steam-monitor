@@ -67,7 +67,9 @@ namespace Steamhook.TCPServer
         /// <param name="protoClient"></param>
         private void AcceptClient(ProtoServerClient protoClient)
         {
-            // Queue the communication into the thread pool
+            Logger.Server.DebugLine($"Client connect: {protoClient.Client.Client.RemoteEndPoint}");
+
+            // Queue the communication into new thread
             // When that thread disconnects, remove that client from the client list
             var newThread = new Thread(o =>
             {

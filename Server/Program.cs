@@ -31,11 +31,15 @@ namespace Steamhook
             }
             else
             {
-                injector.InjectProc(pid);
+                injector.InjectProc(pid, "libprotobufd.dll");
+                injector.InjectProc(pid, "libprotobuf-lited.dll");
+                injector.InjectProc(pid, "steamhook32.dll");
             }
 
             Console.ReadKey();
-           //Application.Run(new MainForm());
+
+            injector.UninjectAll();
+            //Application.Run(new MainForm());
         }
     }
 

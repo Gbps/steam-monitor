@@ -9,12 +9,10 @@ namespace Steamhook
 {
     class Injector
     {
-        public const string ClientDLLName = "steamhook32.dll";
-
         /// <summary>
         /// [pid, HMODULE] of all injected processes 
         /// </summary>
-        private Dictionary<int, IntPtr> m_InjectedHandles = new Dictionary<int, IntPtr>();
+        private Dictionary<int, List<IntPtr>> m_InjectedHandles = new Dictionary<int, List<IntPtr>>();
 
         public Injector()
         {
@@ -22,16 +20,7 @@ namespace Steamhook
 
         ~Injector()
         {
-            // Clean up all the other modules
-            // NOTE: later should be done with pipe connection
-            try
-            {
-                foreach (var kv in m_InjectedHandles)
-                {
-                    UninjectProc(kv.Key);
-                }
-            }
-            catch (Exception) { };
+            UninjectAll();
         }
 
         /// <summary>
@@ -55,27 +44,32 @@ namespace Steamhook
         /// Inject into process specified by pid
         /// </summary>
         /// <param name="pid"></param>
-        public IntPtr InjectProc(int pid)
+        public IntPtr InjectProc(int pid, string dllname)
         {
             Logger.Server.DebugLine($"PID: {pid}");
 
             // Find client dll path
-            string dllPath = GetInjectionLib();
+            string dllPath = GetInjectionLib(dllname);
             Logger.Server.DebugLine($"DLL Path: {dllPath}");
 
             var res = Inject32.InjectPid(pid, dllPath);
 
             Logger.Server.DebugLine("Injection successful");
 
-            m_InjectedHandles[pid] = res;
+            if(!m_InjectedHandles.ContainsKey(pid))
+            {
+                m_InjectedHandles[pid] = new List<IntPtr>();
+            }
+
+            m_InjectedHandles[pid].Add(res);
 
             return res;
         }
 
         public void UninjectProc(int pid)
         {
-            IntPtr handle;
-            var found = m_InjectedHandles.TryGetValue(pid, out handle);
+            List<IntPtr> handlelist;
+            var found = m_InjectedHandles.TryGetValue(pid, out handlelist);
             if(!found)
             {
                 throw new Exception("Tried to uninject a non-injected process");
@@ -83,7 +77,11 @@ namespace Steamhook
 
             Logger.Server.DebugLine($"Uninject PID: {pid}");
 
-            Inject32.UninjectPid(pid, handle);
+            foreach( var handle in handlelist )
+            {
+                Logger.Server.DebugLine($"\tUninject: {handle}");
+                Inject32.UninjectPid(pid, handle);
+            }
 
             Logger.Server.DebugLine("Uninjection successful");
         }
@@ -92,18 +90,35 @@ namespace Steamhook
         /// Get the location of the client dll to be injected
         /// </summary>
         /// <returns>String to the path of the client dll</returns>
-        public string GetInjectionLib()
+        public string GetInjectionLib(string dllname)
         {
             string fullPath = (typeof(Injector)).Assembly.Location;
             string dir = Path.GetDirectoryName(fullPath);
-            string file = Path.Combine(dir, ClientDLLName);
+            string file = Path.Combine(dir, dllname);
 
             if(!File.Exists(file))
             {
-                throw new Exception($"Could not find {ClientDLLName}!");
+                throw new Exception($"Could not find {dllname}!");
             }
 
             return file;
+        }
+
+        /// <summary>
+        /// Uninjects all modules from all processes currently injected into. Does not throw.
+        /// </summary>
+        public void UninjectAll()
+        {
+            // Clean up all the other modules
+            // NOTE: later should be done with pipe connection
+            try
+            {
+                foreach (var kv in m_InjectedHandles)
+                {
+                    UninjectProc(kv.Key);
+                }
+            }
+            catch (Exception) { };
         }
     }
 }

@@ -21,10 +21,7 @@
     <ClInclude Include="targetver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="proto\client.pb.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="proto\server.pb.h">
+    <ClInclude Include="TCPSocketClient.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -35,10 +32,7 @@
     <ClCompile Include="dllmain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="proto\server.pb.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="proto\client.pb.cc">
+    <ClCompile Include="TCPSocketClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
