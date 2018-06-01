@@ -4,7 +4,7 @@ using System.Linq;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 
-namespace Server
+namespace Steamhook
 {
     static class Program
     {
@@ -18,6 +18,9 @@ namespace Server
             Application.SetCompatibleTextRenderingDefault(false);
             Logger.Server.StartConsole();
             Logger.Client.StartConsole();
+
+            var server = new TCPServer.ProtoServer();
+            server.StartListen(10405);
 
             var injector = new Injector();
 

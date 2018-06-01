@@ -5,7 +5,7 @@ using System.Text;
 using System.Runtime.Remoting;
 using System.IO;
 
-namespace Server
+namespace Steamhook
 {
     class Injector
     {
