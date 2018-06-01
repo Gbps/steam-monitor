@@ -22,6 +22,8 @@ namespace Server
 
         ~Injector()
         {
+            // Clean up all the other modules
+            // NOTE: later should be done with pipe connection
             try
             {
                 foreach (var kv in m_InjectedHandles)
