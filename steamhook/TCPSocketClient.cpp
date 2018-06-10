@@ -14,7 +14,7 @@ bool TCPSocketClient::InitConnect(const char * targetHost, const char * targetPo
 	auto iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != 0)
 	{
-		printf("WSAStartup failed with error: %d\n", iResult);
+		Util::Debug::Warning("WSAStartup failed with error: %d", iResult);
 		return false;
 	}
 
@@ -27,7 +27,7 @@ bool TCPSocketClient::InitConnect(const char * targetHost, const char * targetPo
 	iResult = getaddrinfo(targetHost, targetPort, &hints, &result);
 	if (iResult != 0)
 	{
-		printf("getaddrinfo failed with error: %d\n", iResult);
+		Util::Debug::Warning("getaddrinfo failed with error: %d", iResult);
 		WSACleanup();
 		return false;
 	}
@@ -39,7 +39,7 @@ bool TCPSocketClient::InitConnect(const char * targetHost, const char * targetPo
 		ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype,
 			ptr->ai_protocol);
 		if (ConnectSocket == INVALID_SOCKET) {
-			printf("socket failed with error: %ld\n", WSAGetLastError());
+			Util::Debug::Warning("socket failed with error: %ld", WSAGetLastError());
 			WSACleanup();
 			return false;
 		}
@@ -57,13 +57,19 @@ bool TCPSocketClient::InitConnect(const char * targetHost, const char * targetPo
 	freeaddrinfo(result);
 
 	if (ConnectSocket == INVALID_SOCKET) {
-		printf("Unable to connect to server!\n");
+		Util::Debug::Warning("Unable to connect to server!");
 		WSACleanup();
 		return false;
 	}
 
-	WSACleanup();
 	return true;
+}
+
+void steamhook::TCPSocketClient::SendPacket(CDataPacket packet)
+{
+	auto pktToSend = packet.Serialize();
+
+	send(ConnectSocket, &pktToSend[0], pktToSend.size(), 0);
 }
 
 TCPSocketClient::TCPSocketClient()

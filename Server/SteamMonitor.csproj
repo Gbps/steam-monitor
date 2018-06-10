@@ -76,6 +76,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="TCPServer\CDataPacket.cs" />
     <Compile Include="TCPServer\ProtoServerClient.cs" />
     <Compile Include="Injector.cs" />
     <Compile Include="Logger.cs" />
