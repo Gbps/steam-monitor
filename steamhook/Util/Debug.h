@@ -12,7 +12,7 @@ namespace Util
 	{
 	public:
 		template < typename... Args >
-		static void PrintLine(std::string format, Args... args)
+		static void PrintLine(const std::string format, Args... args)
 		{
 #ifdef _DEBUG
 			printf(("[DEBUG] " + format + "\n").c_str(), args...);
@@ -20,7 +20,7 @@ namespace Util
 		}
 
 		template < typename... Args >
-		static void Warning(std::string format, Args... args)
+		static void Warning(const std::string format, Args... args)
 		{
 #ifdef _DEBUG
 			printf(("[WARNING] " + format + "\n").c_str(), args...);
@@ -28,16 +28,16 @@ namespace Util
 		}
 
 		template < typename... Args >
-		static void Error(std::string format, Args... args)
+		static void Error(const std::string format, Args... args)
 		{
 #ifdef _DEBUG
-			std::string out = ("[ERROR] " + format + "\n");
+			auto out = ("[ERROR] " + format + "\n");
 			printf(out.c_str(), args...);
 			throw std::exception(out.c_str());
 #endif
 		}
 
-		static inline void HexDump(void* arr, size_t size)
+		static inline void HexDump(void* arr, const size_t size)
 		{
 			std::stringstream ss;
 
@@ -50,7 +50,5 @@ namespace Util
 			printf("\n");
 		}
 	};
-
-
 }
 

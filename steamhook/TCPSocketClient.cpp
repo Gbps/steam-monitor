@@ -3,12 +3,12 @@
 using namespace steamhook;
 
 
-bool TCPSocketClient::InitConnect(const char * targetHost, const char * targetPort)
+bool CTcpSocketClient::InitConnect(const char * targetHost, const char * targetPort)
 {
 	// -- Incoming pasta --
 	WSADATA wsaData;
-	struct addrinfo *result = NULL,
-		*ptr = NULL,
+	struct addrinfo *result = nullptr,
+		*ptr = nullptr,
 		hints;
 
 	auto iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -33,7 +33,7 @@ bool TCPSocketClient::InitConnect(const char * targetHost, const char * targetPo
 	}
 
 	// Attempt to connect to an address until one succeeds
-	for (ptr = result; ptr != NULL; ptr = ptr->ai_next)
+	for (ptr = result; ptr != nullptr; ptr = ptr->ai_next)
 	{
 		// Create a SOCKET for connecting to server
 		ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype,
@@ -45,7 +45,7 @@ bool TCPSocketClient::InitConnect(const char * targetHost, const char * targetPo
 		}
 
 		// Connect to server.
-		iResult = connect(ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
+		iResult = connect(ConnectSocket, ptr->ai_addr, static_cast<int>(ptr->ai_addrlen));
 		if (iResult == SOCKET_ERROR) {
 			closesocket(ConnectSocket);
 			ConnectSocket = INVALID_SOCKET;
@@ -56,7 +56,7 @@ bool TCPSocketClient::InitConnect(const char * targetHost, const char * targetPo
 
 	freeaddrinfo(result);
 
-	if (ConnectSocket == INVALID_SOCKET) {
+	if (ConnectSocket == INVALID_SOCKET) {  // NOLINT(readability-simplify-boolean-expr)
 		Util::Debug::Warning("Unable to connect to server!");
 		WSACleanup();
 		return false;
@@ -65,18 +65,14 @@ bool TCPSocketClient::InitConnect(const char * targetHost, const char * targetPo
 	return true;
 }
 
-void steamhook::TCPSocketClient::SendPacket(CDataPacket packet)
+void steamhook::CTcpSocketClient::SendPacket(const CDataPacket& packet) const
 {
 	auto pktToSend = packet.Serialize();
 
 	send(ConnectSocket, &pktToSend[0], pktToSend.size(), 0);
 }
 
-TCPSocketClient::TCPSocketClient()
-{
-}
+CTcpSocketClient::CTcpSocketClient() = default;
 
 
-TCPSocketClient::~TCPSocketClient()
-{
-}
+CTcpSocketClient::~CTcpSocketClient() = default;

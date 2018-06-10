@@ -1,7 +1,6 @@
 #pragma once
 
 #include "stdafx.h"
-#include <stdint.h>
 #include <vector>
 #include <memory>
 #include <sstream>
@@ -21,7 +20,7 @@ enum class EArgumentType
 };
 
 // Header of the packet
-class SDataPacketHeader
+class CDataPacketHeader
 {
 public:
 	uint16_t Magic = PKT_HEADER_MAGIC;
@@ -29,7 +28,7 @@ public:
 };
 
 // Name packet
-class SDataPacketName
+class CDataPacketName
 {
 public:
 	uint16_t NameSize = 0;
@@ -38,29 +37,29 @@ public:
 };
 
 // Data of arguments
-class SDataPacketArg
+class CDataPacketArg
 {
 public:
 	uint16_t TypeNum = 0;
 	uint32_t DataSize = 0;
 	std::string Data;
 
-	SDataPacketArg(EArgumentType typenum, const std::string& data)
+	CDataPacketArg(EArgumentType typenum, const std::string& data)
 	{
 		Data = data;
-		DataSize = (uint32_t) data.length();
-		TypeNum = (uint16_t) typenum;
+		DataSize = static_cast<uint32_t>(data.length());
+		TypeNum = static_cast<uint16_t>(typenum);
 	}
 
 };
 
 // Data packet sent to server containing a single API call
-class SDataPacket
+class CDataPacketData
 {
 public:
-	SDataPacketHeader Header;
-	SDataPacketName Name;
-	std::vector<SDataPacketArg> Args;
+	CDataPacketHeader Header;
+	CDataPacketName Name;
+	std::vector<CDataPacketArg> Args{};
 };
 
 
@@ -69,21 +68,15 @@ class CDataPacket
 {
 
 private:
-	SDataPacket m_Packet;
+	CDataPacketData m_Packet;
 	
 	// Create std::string based on POD (Plain old data) types using sizeof to copy their little-endian bytes
 	template <class T, typename = std::enable_if_t<std::is_pod_v<T>>>
-	const std::string StringFromRaw(T arg)
-	{
-		return std::string{ (const char*)&arg, sizeof(T) };
-	}
+	static std::string StringFromRaw(T arg);
 
 	// Copy any std::string constructible data into a new std::string
 	template <class T, typename = std::enable_if_t<std::is_constructible<std::string, T>>>
-	const std::string StringFromRaw(std::string arg)
-	{
-		return arg;
-	}
+	static std::string StringFromRaw(std::string arg);
 
 public:
 
@@ -93,37 +86,37 @@ public:
 
 	// Anything default is typed to struct
 	template<typename T, typename Enable = void>
-	struct ArgumentType {
+	struct CArgumentType {
 		constexpr static EArgumentType type = EArgumentType::ARG_STRUCT;
 	};
 
 	// 4-byte float
 	template<typename T>
-	struct ArgumentType<T, typename std::enable_if_t<std::is_same_v<T, float>>> {
+	struct CArgumentType<T, typename std::enable_if_t<std::is_same_v<T, float>>> {
 		constexpr static EArgumentType type = EArgumentType::ARG_FLOAT;
 	};
 	
 	// 8-byte double
 	template<typename T>
-	struct ArgumentType<T, typename std::enable_if_t<std::is_same_v<T, double> || std::is_same_v<T, long double>>> {
+	struct CArgumentType<T, typename std::enable_if_t<std::is_same_v<T, double> || std::is_same_v<T, long double>>> {
 		constexpr static EArgumentType type = EArgumentType::ARG_DOUBLE;
 	};
 	
 	// Signed integers
 	template<typename T>
-	struct ArgumentType<T, typename std::enable_if_t<std::is_integral_v<T> && std::is_signed_v<T>>> {
+	struct CArgumentType<T, typename std::enable_if_t<std::is_integral_v<T> && std::is_signed_v<T>>> {
 		constexpr static EArgumentType type = EArgumentType::ARG_SIGNED;
 	};
 	
 	// Unsigned integers
 	template<typename T>
-	struct ArgumentType<T, typename std::enable_if_t<std::is_integral_v<T> && std::is_unsigned_v<T>>> {
+	struct CArgumentType<T, typename std::enable_if_t<std::is_integral_v<T> && std::is_unsigned_v<T>>> {
 		constexpr static EArgumentType type = EArgumentType::ARG_UNSIGNED;
 	};
 
 	// String argument (std::string or char* or const char*)
 	template<typename T>
-	struct ArgumentType<T, typename std::enable_if_t<std::is_convertible_v<T, std::string>>> {
+	struct CArgumentType<T, typename std::enable_if_t<std::is_convertible_v<T, std::string>>> {
 		constexpr static EArgumentType type = EArgumentType::ARG_STRING;
 	};
 
@@ -134,46 +127,62 @@ public:
 	// Add an argument to the data packet
 	// Accepts all forms of POD (plain old data like structs and fundamental types) and most c-string objects
 	template <typename T>
-	void AddArgument(T argument)
-	{
-		const auto typeCode = ArgumentType<T>::type;
-
-		m_Packet.Args.emplace_back(typeCode, StringFromRaw(argument));
-		m_Packet.Name.NumArgs += 1;
-	}
+	void AddArgument(T argument);
 
 #define WRITE_TO_STREAM(OBJ) outstr.write((const char*)&OBJ, sizeof(decltype(OBJ)))
 #define WRITE_TO_STREAM_STR(OBJ) outstr << OBJ
 
 	// Serialize the packet to flat data 
-	inline std::string Serialize()
-	{
-		std::stringstream outstr;
-
-		auto zero = (uint32_t)0x00000000;
-
-		// Packet Type Header
-		WRITE_TO_STREAM(m_Packet.Header.Magic);
-		WRITE_TO_STREAM(m_Packet.Header.Id);
-
-		// Name Header
-		WRITE_TO_STREAM(m_Packet.Name.NameSize);
-		WRITE_TO_STREAM_STR(m_Packet.Name.Name);
-		WRITE_TO_STREAM(m_Packet.Name.NumArgs);
-
-		// Arguments
-		for (const auto& arg : m_Packet.Args)
-		{
-			WRITE_TO_STREAM(arg.TypeNum);
-			WRITE_TO_STREAM(arg.DataSize);
-			WRITE_TO_STREAM_STR(arg.Data);
-		}
-
-		return outstr.str();
-	}
+	inline std::string Serialize() const;
 
 	CDataPacket();
 	~CDataPacket();
 
 };
 
+template <class T, typename>
+std::string CDataPacket::StringFromRaw(T arg)
+{
+	return std::string{reinterpret_cast<char*>(&arg), sizeof(T)};
+}
+
+template <class T, typename>
+std::string CDataPacket::StringFromRaw(std::string arg)
+{
+	return arg;
+}
+
+template <typename T>
+void CDataPacket::AddArgument(T argument)
+{
+	const auto typeCode = CArgumentType<T>::type;
+
+	m_Packet.Args.emplace_back(typeCode, StringFromRaw(argument));
+	m_Packet.Name.NumArgs += 1;
+}
+
+inline std::string CDataPacket::Serialize() const
+{
+	std::stringstream outstr;
+
+	auto zero = 0x00000000;
+
+	// Packet Type Header
+	WRITE_TO_STREAM(m_Packet.Header.Magic);
+	WRITE_TO_STREAM(m_Packet.Header.Id);
+
+	// Name Header
+	WRITE_TO_STREAM(m_Packet.Name.NameSize);
+	WRITE_TO_STREAM_STR(m_Packet.Name.Name);
+	WRITE_TO_STREAM(m_Packet.Name.NumArgs);
+
+	// Arguments
+	for (const auto& arg : m_Packet.Args)
+	{
+		WRITE_TO_STREAM(arg.TypeNum);
+		WRITE_TO_STREAM(arg.DataSize);
+		WRITE_TO_STREAM_STR(arg.Data);
+	}
+
+	return outstr.str();
+}

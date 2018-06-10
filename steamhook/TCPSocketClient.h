@@ -7,7 +7,7 @@
 
 namespace steamhook
 {
-	class TCPSocketClient
+	class CTcpSocketClient
 	{
 	private:
 
@@ -20,10 +20,10 @@ namespace steamhook
 		bool InitConnect(const char* targetHost, const char* targetPort);
 
 		// Queue packet to be sent over the connection
-		void SendPacket(CDataPacket packet);
+		void SendPacket(const CDataPacket& packet) const;
 
-		TCPSocketClient();
-		~TCPSocketClient();
+		CTcpSocketClient();
+		~CTcpSocketClient();
 	};
 }
 

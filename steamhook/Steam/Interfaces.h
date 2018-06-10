@@ -11,33 +11,33 @@ namespace Steam
 
 	// Resolves SteamAPI interface objects from static or dynamic compilation
 	// Often times games and applications will link to steam_api.dll -> steamclient.dll and resolve interfaces dynamically
-	class Interfaces
+	class CInterfaces
 	{
 	private:
 
 		// Module for steamclient.dll, if a process doesn't have this, it's probably not using the steam api
-		HMODULE m_SteamClient;
+		HMODULE m_SteamClient = nullptr;
 
 		// Module for steam_api.dll, if a process doesn't have this, it's probably not using the steam api
-		HMODULE m_SteamAPI;
+		HMODULE m_SteamAPI = nullptr;
 
 		// List of interfaces cached for reference
-		SteamInterfaceMap m_Interfaces;
+		SteamInterfaceMap m_Interfaces{};
 
 		// Pointer to CreateInterface
-		SteamInterface (__cdecl *m_CreateInterfaceFn)(const char* pName, int *pReturnCode);
+		SteamInterface (__cdecl *m_CreateInterfaceFn)(const char* pName, int* pReturnCode) = nullptr;
 
 		// Pointer to SteamAPI_GetHSteamUser
-		HSteamUser (__cdecl *m_SteamAPI_GetHSteamUser)();
+		HSteamUser (__cdecl *m_SteamAPI_GetHSteamUser)() = nullptr;
 		
 		// Pointer to SteamAPI_GetHSteamPipe
-		HSteamPipe (__cdecl *m_SteamAPI_GetHSteamPipe)();
+		HSteamPipe (__cdecl *m_SteamAPI_GetHSteamPipe)() = nullptr;
 
 		// Local steam user handle for pipe connection
-		HSteamUser m_SteamUserHandle;
+		HSteamUser m_SteamUserHandle = 0;
 
 		// Steam pipe handle for pipe connection
-		HSteamPipe m_SteamPipeHandle;
+		HSteamPipe m_SteamPipeHandle = 0;
 
 		ISteamClient* m_ISteamClient = nullptr;
 
@@ -103,7 +103,7 @@ namespace Steam
 			}
 
 			int iReturnCode;
-			auto inter = m_CreateInterfaceFn(inf, &iReturnCode);
+			const auto inter = m_CreateInterfaceFn(inf, &iReturnCode);
 			if (inter == nullptr)
 			{
 				Util::Debug::Warning("Failed to find interface '%s'", inf);
@@ -117,7 +117,7 @@ namespace Steam
 
 		// GetProcAddress for steam DLLs
 		template<typename T>
-		bool GetDLLProc(T* TargetPtr, HMODULE mod, const char* name)
+		static bool GetDLLProc(T* targetPtr, const HMODULE mod, const char* name)
 		{
 			auto res = ::GetProcAddress(mod, name);
 			if (!res)
@@ -126,7 +126,7 @@ namespace Steam
 				return false;
 			}
 
-			*TargetPtr = reinterpret_cast<T>(res);
+			*targetPtr = reinterpret_cast<T>(res);
 
 			Util::Debug::PrintLine("%s @ 0x%08X", name, res);
 
@@ -142,12 +142,12 @@ namespace Steam
 			return m_ISteamClient;
 		}
 
-		inline HSteamPipe GetHSteamPipe()
+		inline HSteamPipe GetHSteamPipe() const
 		{
 			return m_SteamPipeHandle;
 		}
 
-		inline HSteamUser GetHSteamUser()
+		inline HSteamUser GetHSteamUser() const
 		{
 			return m_SteamUserHandle;
 		}

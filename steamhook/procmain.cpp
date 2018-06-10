@@ -26,7 +26,7 @@ void ToHookDetour(decltype(ToHook)* original)
 
 int main(int argc, char *argv[])
 {
-	steamhook::TCPSocketClient client;
+	steamhook::CTcpSocketClient client;
 
 	client.InitConnect("127.0.0.1", "10405");
 
@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 
 	SteamAPI_Init();
 	
-	Steam::Interfaces interfaces;
+	Steam::CInterfaces interfaces;
 	if (!interfaces.InitSteamConnection())
 	{ 
 		Util::Debug::Error("Failed to initialize Steam::Interfaces");
@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 		
 	auto test3 = interfaces.GetISteamNetworking(STEAMNETWORKING_INTERFACE_VERSION);
 
-	Steam::APIHook hook{ "TestHook" };
+	Steam::CApiHook hook{ "TestHook" };
 
 	hook.Hook(ToHook, ToHookDetour);
 	hook.Enable();
