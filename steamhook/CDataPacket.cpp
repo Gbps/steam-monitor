@@ -8,7 +8,3 @@ void CDataPacket::InitPacket(const std::string & name)
 
 }
 
-CDataPacket::CDataPacket() = default;
-
-
-CDataPacket::~CDataPacket() = default;

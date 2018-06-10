@@ -71,8 +71,3 @@ void steamhook::CTcpSocketClient::SendPacket(const CDataPacket& packet) const
 
 	send(ConnectSocket, &pktToSend[0], pktToSend.size(), 0);
 }
-
-CTcpSocketClient::CTcpSocketClient() = default;
-
-
-CTcpSocketClient::~CTcpSocketClient() = default;

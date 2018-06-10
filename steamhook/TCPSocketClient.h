@@ -22,8 +22,8 @@ namespace steamhook
 		// Queue packet to be sent over the connection
 		void SendPacket(const CDataPacket& packet) const;
 
-		CTcpSocketClient();
-		~CTcpSocketClient();
+
+		CTcpSocketClient() = default;
 	};
 }
 

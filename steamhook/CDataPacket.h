@@ -66,7 +66,6 @@ public:
 // Data packet serializer for sending over the wire
 class CDataPacket
 {
-
 private:
 	CDataPacketData m_Packet;
 	
@@ -79,6 +78,10 @@ private:
 	static std::string StringFromRaw(std::string arg);
 
 public:
+
+
+	CDataPacket() = default;
+
 
 	/*
 		These templates will automatically assign a packet type designator based on the general type of the object passed in
@@ -129,15 +132,8 @@ public:
 	template <typename T>
 	void AddArgument(T argument);
 
-#define WRITE_TO_STREAM(OBJ) outstr.write((const char*)&OBJ, sizeof(decltype(OBJ)))
-#define WRITE_TO_STREAM_STR(OBJ) outstr << OBJ
-
 	// Serialize the packet to flat data 
 	inline std::string Serialize() const;
-
-	CDataPacket();
-	~CDataPacket();
-
 };
 
 template <class T, typename>
@@ -160,6 +156,10 @@ void CDataPacket::AddArgument(T argument)
 	m_Packet.Args.emplace_back(typeCode, StringFromRaw(argument));
 	m_Packet.Name.NumArgs += 1;
 }
+
+
+#define WRITE_TO_STREAM(OBJ) outstr.write((const char*)&OBJ, sizeof(decltype(OBJ)))
+#define WRITE_TO_STREAM_STR(OBJ) outstr << OBJ
 
 inline std::string CDataPacket::Serialize() const
 {

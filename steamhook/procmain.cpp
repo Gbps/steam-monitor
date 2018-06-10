@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
 
 	Steam::CApiHook hook{ "TestHook" };
 
-	hook.Hook(ToHook, ToHookDetour);
+	hook.HookVirtual(test3, 3, ToHookDetour);
 	hook.Enable();
 
 	ToHook();

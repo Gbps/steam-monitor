@@ -7,8 +7,6 @@
 
 namespace Steam
 {
-	
-
 	// The executable stub that can be allocated to carry a pointer to the original hook function at runtime
 	class CApiHookStub
 	{
@@ -28,9 +26,7 @@ namespace Steam
 #pragma pack(pop)
 
 	public:
-		CApiHookStub(): shellcode()
-		{
-		}
+		CApiHookStub() = default;
 
 		CApiHookStub(uint32_t calltarget, uint32_t arg0);
 
@@ -73,7 +69,7 @@ namespace Steam
 		using StubAllocator = std::vector<CApiHookStub, Util::ExecutableAllocator<CApiHookStub>>;
 
 		// Number of payload objects to allocate on initialization. Can grow after that. 
-		static const unsigned int DefaultHookNumber = 100;
+		static const unsigned int DefaultHookNumber = 256;
 
 		// Is the allocator allocated?
 		static inline bool Initialized;
@@ -97,7 +93,7 @@ namespace Steam
 			auto&& stub = CApiHookStub{ reinterpret_cast<uint32_t>(callTarget), reinterpret_cast<uint32_t>(firstArgument) };
 
 			// Alloate an executable stub address
-			auto* obj = &CApiHookGlobals::Allocator.emplace_back(stub);
+			auto* obj = &Allocator.emplace_back(stub);
 
 			return obj;
 		}
@@ -119,101 +115,127 @@ namespace Steam
 		bool m_Hooked = false;
 
 		// Stub to use for argument capture
-		CApiHookStub* m_Stub{};
+		CApiHookStub* m_Stub = nullptr;
 
 		// Name of the hook
 		std::string m_Name;
 
 	public:
 
+		~CApiHook();
 		CApiHook(const CApiHook&) = delete;
 		CApiHook& operator=(const CApiHook&) = delete;
-		CApiHook(CApiHook&&) = delete;
-		CApiHook& operator=(CApiHook&&) = delete;
+		CApiHook(CApiHook&&) = default;
+		CApiHook& operator=(CApiHook&&) = default;
 
-		~CApiHook()
-		{
-			// We leak our call stub here but there's not much we can do about that when using std::vector
-			UnHook();
-		}
+		explicit CApiHook(const std::string& name);
 
-		explicit CApiHook(const std::string& name)
-		{
-			CApiHookGlobals::Initialize();
-			m_Name = name;
-			m_Stub = CApiHookGlobals::MakeStub(nullptr, nullptr);
-		}
+		// Hook the target function, detouring the function with hookFunction
+		// hookFunction will be passed the original function pointer as the first argument
+		inline bool Hook(void* pTarget, void* hookFunction);
 
-		inline bool Hook(void* pTarget, void* hookFunction)
-		{
-			if (m_Hooked) 
-				return true;
+		// Hook a virtual member function given an instance of the object and its vtable index
+		bool HookVirtual(void* pTargetObject, uint16_t vtableidx, void* hookFunction);
 
-			if (MH_Initialize() != MH_OK)
-			{
-				Util::Debug::Warning("Failed MH_Initialize");
-				return false;
-			}
+		// Enable the hook. Call after Hook
+		inline bool Enable() const;
 
-			m_Target = pTarget;
-			m_Detour = hookFunction;
+		// Disable the hook, to be re-enabled later
+		inline bool Disable() const;
 
-			m_Stub->SetCallTarget(m_Detour);
-
-			const auto res = MH_CreateHook(m_Target, m_Stub->GetStubPtr(), static_cast<LPVOID *>(&m_Original));
-			if (res != MH_OK)
-			{
-				Util::Debug::Warning("Failed MH_Createhook on %s", m_Name.c_str());
-				return false;
-			}
-
-			m_Stub->SetArgument(m_Original);
-
-			m_Hooked = true;
-			return true;
-		}
-
-		inline bool Enable() const
-		{
-			if (!m_Hooked)
-			{
-				return false;
-			}
-
-			if (MH_EnableHook(m_Target) != MH_OK)
-			{
-				Util::Debug::Warning("Failed MH_EnableHook on %s", m_Name.c_str());
-				return false;
-			}
-
-			return true;
-		}
-
-		inline bool Disable() const
-		{
-			if (!m_Hooked)
-			{
-				return false;
-			}
-
-			if (MH_DisableHook(m_Target) != MH_OK)
-			{
-				Util::Debug::Warning("Failed MH_DisableHook on %s", m_Name.c_str());
-				return false;
-			}
-
-			return true;
-		}
-
-		inline bool UnHook() const
-		{
-			if (!MH_RemoveHook(m_Target) != MH_OK)  // NOLINT(readability-simplify-boolean-expr)
-			{
-				Util::Debug::Warning("Failed MH_RemoveHook on %s", m_Name.c_str());
-				return false;
-			}
-
-			return true;
-		}
+		// Unhook the function and free (most) resources
+		inline bool UnHook() const;
 	};
+
+	inline CApiHook::~CApiHook()
+	{
+		// We leak our call stub here but there's not much we can do about that when using std::vector
+		auto unused = UnHook();
+	}
+
+	inline CApiHook::CApiHook(const std::string& name)
+	{
+		CApiHookGlobals::Initialize();
+		m_Name = name;
+		m_Stub = CApiHookGlobals::MakeStub(nullptr, nullptr);
+	}
+
+	inline bool CApiHook::Hook(void* pTarget, void* hookFunction)
+	{
+		if (m_Hooked)
+			return true;
+
+		if (MH_Initialize() != MH_OK)
+		{
+			Util::Debug::Warning("Failed MH_Initialize");
+			return false;
+		}
+
+		m_Target = pTarget;
+		m_Detour = hookFunction;
+
+		m_Stub->SetCallTarget(m_Detour);
+
+		const auto res = MH_CreateHook(m_Target, m_Stub->GetStubPtr(), static_cast<LPVOID *>(&m_Original));
+		if (res != MH_OK)
+		{
+			Util::Debug::Warning("Failed MH_Createhook on %s", m_Name.c_str());
+			return false;
+		}
+
+		m_Stub->SetArgument(m_Original);
+
+		m_Hooked = true;
+		return true;
+	}
+
+	inline bool CApiHook::HookVirtual(void* pTargetObject, uint16_t vtableidx, void* hookFunction)
+	{
+		auto** vtable = *reinterpret_cast<void***>(pTargetObject);
+		auto* faddr = vtable[vtableidx];
+		return Hook(faddr, hookFunction);
+	}
+
+	inline bool CApiHook::Enable() const
+	{
+		if (!m_Hooked)
+		{
+			return false;
+		}
+
+		if (MH_EnableHook(m_Target) != MH_OK)
+		{
+			Util::Debug::Warning("Failed MH_EnableHook on %s", m_Name.c_str());
+			return false;
+		}
+
+		return true;
+	}
+
+	inline bool CApiHook::Disable() const
+	{
+		if (!m_Hooked)
+		{
+			return false;
+		}
+
+		if (MH_DisableHook(m_Target) != MH_OK)
+		{
+			Util::Debug::Warning("Failed MH_DisableHook on %s", m_Name.c_str());
+			return false;
+		}
+
+		return true;
+	}
+
+	inline bool CApiHook::UnHook() const
+	{
+		if (!MH_RemoveHook(m_Target) != MH_OK) // NOLINT(readability-simplify-boolean-expr)
+		{
+			Util::Debug::Warning("Failed MH_RemoveHook on %s", m_Name.c_str());
+			return false;
+		}
+
+		return true;
+	}
 }
