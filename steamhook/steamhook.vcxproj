@@ -221,6 +221,7 @@
     <ClInclude Include="CDataPacket.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Steam\APIHook.h" />
+    <ClInclude Include="Steam\CHookManager_impl.h" />
     <ClInclude Include="Util\ExecutableAllocator.h" />
     <ClInclude Include="Steam\HookManager.h" />
     <ClInclude Include="Steam\Interfaces.h" />

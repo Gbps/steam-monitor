@@ -130,6 +130,8 @@ namespace Steam
 
 		explicit CApiHook(const std::string& name);
 
+		CApiHook(void* pTargetObject, const uint16_t vtableidx, void* hookFunction);
+
 		// Hook the target function, detouring the function with hookFunction
 		// hookFunction will be passed the original function pointer as the first argument
 		inline bool Hook(void* pTarget, void* hookFunction);
@@ -160,21 +162,25 @@ namespace Steam
 		m_Stub = CApiHookGlobals::MakeStub(nullptr, nullptr);
 	}
 
+	inline CApiHook::CApiHook(void* pTargetObject, const uint16_t vtableidx, void* hookFunction) : CApiHook("")
+	{
+		HookVirtual(pTargetObject, vtableidx, hookFunction);
+		Enable();
+	}
+
 	inline bool CApiHook::Hook(void* pTarget, void* hookFunction)
 	{
 		if (m_Hooked)
 			return true;
 
-		if (MH_Initialize() != MH_OK)
-		{
-			Util::Debug::Warning("Failed MH_Initialize");
-			return false;
-		}
+		MH_Initialize();
 
 		m_Target = pTarget;
 		m_Detour = hookFunction;
 
 		m_Stub->SetCallTarget(m_Detour);
+
+		Util::Debug::PrintLine("m_Target: %08X", m_Target);
 
 		const auto res = MH_CreateHook(m_Target, m_Stub->GetStubPtr(), static_cast<LPVOID *>(&m_Original));
 		if (res != MH_OK)

@@ -90,37 +90,37 @@ public:
 	// Anything default is typed to struct
 	template<typename T, typename Enable = void>
 	struct CArgumentType {
-		constexpr static EArgumentType type = EArgumentType::ARG_STRUCT;
+		constexpr static EArgumentType Type = EArgumentType::ARG_STRUCT;
 	};
 
 	// 4-byte float
 	template<typename T>
 	struct CArgumentType<T, typename std::enable_if_t<std::is_same_v<T, float>>> {
-		constexpr static EArgumentType type = EArgumentType::ARG_FLOAT;
+		constexpr static EArgumentType Type = EArgumentType::ARG_FLOAT;
 	};
 	
 	// 8-byte double
 	template<typename T>
 	struct CArgumentType<T, typename std::enable_if_t<std::is_same_v<T, double> || std::is_same_v<T, long double>>> {
-		constexpr static EArgumentType type = EArgumentType::ARG_DOUBLE;
+		constexpr static EArgumentType Type = EArgumentType::ARG_DOUBLE;
 	};
 	
 	// Signed integers
 	template<typename T>
 	struct CArgumentType<T, typename std::enable_if_t<std::is_integral_v<T> && std::is_signed_v<T>>> {
-		constexpr static EArgumentType type = EArgumentType::ARG_SIGNED;
+		constexpr static EArgumentType Type = EArgumentType::ARG_SIGNED;
 	};
 	
 	// Unsigned integers
 	template<typename T>
 	struct CArgumentType<T, typename std::enable_if_t<std::is_integral_v<T> && std::is_unsigned_v<T>>> {
-		constexpr static EArgumentType type = EArgumentType::ARG_UNSIGNED;
+		constexpr static EArgumentType Type = EArgumentType::ARG_UNSIGNED;
 	};
 
 	// String argument (std::string or char* or const char*)
 	template<typename T>
 	struct CArgumentType<T, typename std::enable_if_t<std::is_convertible_v<T, std::string>>> {
-		constexpr static EArgumentType type = EArgumentType::ARG_STRING;
+		constexpr static EArgumentType Type = EArgumentType::ARG_STRING;
 	};
 
 	
@@ -151,7 +151,7 @@ std::string CDataPacket::StringFromRaw(std::string arg)
 template <typename T>
 void CDataPacket::AddArgument(T argument)
 {
-	const auto typeCode = CArgumentType<T>::type;
+	const auto typeCode = CArgumentType<T>::Type;
 
 	m_Packet.Args.emplace_back(typeCode, StringFromRaw(argument));
 	m_Packet.Name.NumArgs += 1;

@@ -5,6 +5,7 @@
 #include "CDataPacket.h"
 #include "Steam/Interfaces.h"
 #include "Steam/APIHook.h"
+#include "Steam/CHookManager_impl.h"
 
 struct Test
 {
@@ -56,6 +57,14 @@ int main(int argc, char *argv[])
 
 	hook.HookVirtual(test3, 3, ToHookDetour);
 	hook.Enable();
+
+	auto test4 = interfaces.GetISteamFriends(STEAMFRIENDS_INTERFACE_VERSION);
+
+	Steam::ISteamFriends_Hooks hooks(test4);
+
+	getchar();
+
+	const char* test5 = test4->GetPersonaName();
 
 	ToHook();
 	getchar();
