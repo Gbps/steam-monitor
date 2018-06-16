@@ -27,13 +27,13 @@ void ToHookDetour(decltype(ToHook)* original)
 
 int main(int argc, char *argv[])
 {
-	steamhook::CTcpSocketClient client;
+	steamhook::CTcpSocketClient client{};
 
 	client.InitConnect("127.0.0.1", "10405");
 
-	CDataPacket pkt;
+	CDataPacket pkt{};
 
-	Test test = { 0x1337, 0xCAFEBABE };
+	const Test test = { 0x1337, 0xCAFEBABE };
 
 	pkt.InitPacket("Hello");
 	pkt.AddArgument(test);
@@ -50,13 +50,6 @@ int main(int argc, char *argv[])
 		Util::Debug::Error("Failed to initialize Steam::Interfaces");
 		return 0;
 	}
-		
-	auto test3 = interfaces.GetISteamNetworking(STEAMNETWORKING_INTERFACE_VERSION);
-
-	Steam::CApiHook hook{ "TestHook" };
-
-	hook.HookVirtual(test3, 3, ToHookDetour);
-	hook.Enable();
 
 	auto test4 = interfaces.GetISteamFriends(STEAMFRIENDS_INTERFACE_VERSION);
 
@@ -64,9 +57,8 @@ int main(int argc, char *argv[])
 
 	getchar();
 
-	const char* test5 = test4->GetPersonaName();
+	test4->ActivateGameOverlay("Dialog");
 
-	ToHook();
 	getchar();
 	return 0;
 }

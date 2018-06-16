@@ -36,9 +36,6 @@
     <ClInclude Include="Steam\APIHook.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Util\ExecutableAllocator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Util\Debug.h">
       <Filter>Header Files</Filter>
     </ClInclude>

@@ -1,0 +1,18 @@
+#pragma once
+
+#include "stdafx.h"
+#include "APIHook.h"
+#include "HookManager.h"
+
+namespace Steam
+{
+	class $[ClassName]$_Hooks : CHookManager<$[ClassName]$>
+	{
+
+	public:
+		$[ClassName]$_Hooks() = delete;
+		$[ClassName]$_Hooks($[ClassName]$* obj) : CHookManager<$[ClassName]$>(obj) {};
+
+        $[FunctionDefinitions]$
+	};
+}

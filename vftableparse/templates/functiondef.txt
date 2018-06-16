@@ -1,0 +1,8 @@
+		
+		HOOK_DECL($[FuncName]$, $[VFIndex]$, $[RetType]$$[ArgsComma]$$[ArgsString]$)
+		{
+			Util::Debug::PrintLine("$[FuncName]$!");
+
+			return $[FuncName]$Original(This$[ArgsComma]$$[ArgsCall]$);
+		}
+		
