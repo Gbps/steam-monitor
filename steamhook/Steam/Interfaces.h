@@ -2,18 +2,30 @@
 
 #include "stdafx.h"
 #include <map>
+#include "Util/LDE.h"
 
 namespace Steam
 {
-	using SteamInterface = void*;
+	namespace SDKDefs
+	{
+		typedef void* (*InstantiateInterfaceFn) ();
 
-	using SteamInterfaceMap = std::map<std::string, SteamInterface>;
+		class InterfaceReg 
+		{
+		public:
+			InstantiateInterfaceFn m_CreateFn;
+			const char* m_pName;
+			InterfaceReg* m_pNext;
+		};
+	}
 
 	// Resolves SteamAPI interface objects from static or dynamic compilation
 	// Often times games and applications will link to steam_api.dll -> steamclient.dll and resolve interfaces dynamically
 	class CInterfaces
 	{
-	private:
+		using SteamInterface = void*;
+		using SteamInterfaceMap = std::map<std::string, SteamInterface>;
+		using InterfaceReg = Steam::SDKDefs::InterfaceReg;
 
 		// Module for steamclient.dll, if a process doesn't have this, it's probably not using the steam api
 		HMODULE m_SteamClient = nullptr;
@@ -42,6 +54,58 @@ namespace Steam
 		ISteamClient* m_ISteamClient = nullptr;
 
 	public:
+
+		inline auto LocateInterfaceRegs() const
+		{
+			auto outRegs = std::make_unique<std::vector<std::string>>();
+
+			// WARNING: MUST be "Yes with SEH Exceptions (/EHa)" for "C++ Exceptions"!
+			try
+			{
+				/*
+				 *  CreateInterface:
+				 *  push    ebp
+				 *  mov     ebp, esp
+				 *  pop     ebp
+				 *  jmp     CreateInterfaceInternal
+				 */
+
+				auto* jmpInstr = Util::LDE32::SkipInstructions(m_CreateInterfaceFn, 3);
+				const auto createInterfaceInternal = Util::LDE32::GetImmediateJumpAddress(jmpInstr);
+
+				Util::Debug::PrintLine("CreateInterfaceInternal: 0x%08X", createInterfaceInternal);
+
+				/*
+				 * CreateInterfaceInternal:
+				 * 55                      push    ebp
+				 * 8B EC                   mov     ebp, esp
+				 * 56                      push    esi
+				 * 8B 35 38 64 B1 38       mov     esi, s_pInterfaceRegs
+				 */
+				auto* movInstr = Util::LDE32::SkipInstructions(createInterfaceInternal, 3);
+				auto* s_pInterfaceRegs = Util::LDE32::GetMovImm32<InterfaceReg**>(movInstr);
+
+				Util::Debug::PrintLine("s_pInterfaceRegs: 0x%08X", s_pInterfaceRegs);
+
+				for(auto* regCur = *s_pInterfaceRegs; regCur; regCur = regCur->m_pNext)
+				{
+					outRegs->emplace_back(std::string{ regCur->m_pName });
+				}
+			}
+			// Catch access violation
+			catch (...)
+			{
+			}
+
+			auto outStr = std::string{};
+			for( const auto& name : *outRegs)
+			{
+				outStr += " " + name;
+			}
+			Util::Debug::PrintLine("Found interfaces:%s", outStr.c_str());
+
+			return std::move(outRegs); 
+		}
 
 		// Connect to the local steam service
 		inline bool InitSteamConnection()
@@ -88,8 +152,8 @@ namespace Steam
 				Util::Debug::Warning("Failed to initialize HSteamPipe, SteamAPI is not initialized yet");
 				return false;
 			}
-			
 
+			LocateInterfaceRegs();
 			return true;
 		}
 

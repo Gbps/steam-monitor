@@ -10,37 +10,51 @@ namespace Util
 {
 	class Debug
 	{
+	private:
+
+		template < typename... Args >
+		static std::string _FormatMessage(const std::string& prefix, const std::string& format, Args... args)
+		{
+			auto msgOut = std::string{};
+			msgOut.reserve(512);
+
+			auto fmt = (prefix + format + "\n");
+			snprintf(msgOut.data(), msgOut.capacity(), fmt.c_str(), args...);
+
+			return msgOut;
+		}
+
+		template < typename... Args >
+		static void _PrintLinePrefixed(const std::string& prefix, const std::string& format, Args... args)
+		{
+#ifdef _DEBUG
+			auto msgOut = _FormatMessage(prefix, format, args...);
+			OutputDebugString(msgOut.c_str());
+			printf("%s", msgOut.c_str());
+#endif
+		}
 	public:
 		template < typename... Args >
-		static void PrintLine(const std::string format, Args... args)
+		static void PrintLine(const std::string& format, Args... args)
 		{
-#ifdef _DEBUG
-			printf(("[DEBUG] " + format + "\n").c_str(), args...);
-#endif
+			_PrintLinePrefixed("[DEBUG] ", format, args...);
 		}
 
 		template < typename... Args >
-		static void Warning(const std::string format, Args... args)
+		static void Warning(const std::string& format, Args... args)
 		{
-#ifdef _DEBUG
-			printf(("[WARNING] " + format + "\n").c_str(), args...);
-#endif
+			_PrintLinePrefixed("[WARNING] ", format, args...);
 		}
 
 		template < typename... Args >
-		static void Error(const std::string format, Args... args)
+		static void Error(const std::string& format, Args... args)
 		{
-#ifdef _DEBUG
-			auto out = ("[ERROR] " + format + "\n");
-			printf(out.c_str(), args...);
-			throw std::exception(out.c_str());
-#endif
+			auto msgOut = _FormatMessage("[ERROR] ", format, args...);
+			throw std::exception(msgOut.c_str());
 		}
 
 		static inline void HexDump(void* arr, const size_t size)
 		{
-			std::stringstream ss;
-
 			auto* ref = reinterpret_cast<unsigned char*>(arr);
 
 			for (size_t i = 0; i < size; ++i)

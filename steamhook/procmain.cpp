@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
 
 	SteamAPI_Init();
 	
-	Steam::CInterfaces interfaces;
+	Steam::CInterfaces interfaces{};
 	if (!interfaces.InitSteamConnection())
 	{ 
 		Util::Debug::Error("Failed to initialize Steam::Interfaces");
@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
 
 	getchar();
 
-	test4->ActivateGameOverlay("Dialog");
+	test4->ActivateGameOverlay("Friends");
 
 	getchar();
 	return 0;

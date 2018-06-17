@@ -42,6 +42,9 @@
     <ClInclude Include="Steam\CHookManager_impl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Util\LDE.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="steamhook.cpp">
